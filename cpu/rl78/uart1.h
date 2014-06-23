@@ -29,28 +29,15 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 /**
- * \author Ian Martin <martini@redwirellc.com>
+ * \author Maxim Salov <max.salov@gmail.com>
  */
 
-#include <stddef.h> // for size_t.
+#ifndef UART1_H__
+#define UART1_H__
 
-#include "platform-conf.h"
-#include "uart0.h"
-#include "uart1.h"
-#include "write.h"
+void uart1_init(void);
+void uart1_putchar(int c);
+#define uart1_can_getchar() (SRIF1)
+char uart1_getchar(void);
 
-int write(int fd, const void *buf, size_t count) {
-	size_t n;
-#ifdef PLATFORM_USE_UART1
-	for (n=0; n<count; n++) uart1_putchar(((const char*)buf)[n]);
-#else
-	for (n=0; n<count; n++) uart0_putchar(((const char*)buf)[n]);
-#endif
-	return count;
-}
-
-#ifdef __IAR_SYSTEMS_ICC__
-	size_t __write(int fd, const unsigned char *buf, size_t count) {
-		write(fd, buf, count);
-	}
-#endif
+#endif /* UART1_H__ */
