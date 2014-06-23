@@ -50,7 +50,7 @@ void
 uart0_init(void)
 {
   /* Reference R01AN0459EJ0100 or hardware manual for details */
-  PIOR = 0U;                                           /* Disable IO redirection */
+  PIOR0 = 0U;                                           /* Disable IO redirection */
   PM1 |= 0x06U;                                         /* Set P11 and P12 as inputs */
   SAU0EN = 1;                                               /* Supply clock to serial array unit 0 */
   SPS0 = (PRS_VALUE << 4) | PRS_VALUE;                  /* Set input clock (CK00 and CK01) to fclk/16 = 2MHz */
