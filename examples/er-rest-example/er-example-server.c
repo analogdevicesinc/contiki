@@ -65,6 +65,7 @@
  */
 extern resource_t
   res_hello,
+  res_led,
   res_mirror,
   res_chunks,
   res_separate,
@@ -110,11 +111,12 @@ PROCESS_THREAD(er_example_server, ev, data)
    * WARNING: Activating twice only means alternate path, not two instances!
    * All static variables are the same for each URI path.
    */
+  rest_activate_resource(&res_led, "led");
   rest_activate_resource(&res_hello, "test/hello");
 /*  rest_activate_resource(&res_mirror, "debug/mirror"); */
 /*  rest_activate_resource(&res_chunks, "test/chunks"); */
 /*  rest_activate_resource(&res_separate, "test/separate"); */
-  rest_activate_resource(&res_push, "test/push");
+/*  rest_activate_resource(&res_push, "test/push"); */
 /*  rest_activate_resource(&res_event, "sensors/button"); */
 /*  rest_activate_resource(&res_sub, "test/sub"); */
 /*  rest_activate_resource(&res_b1_sep_b2, "test/b1sepb2"); */
