@@ -146,7 +146,12 @@ endif
   CFLAGS  += -fno-builtin
   LDFLAGS += -fno-builtin
 
-  LDFLAGS += -Wl,--gc-sections -T $(CONTIKI_CPU)/R5F100xL.ld -nostartfiles
+  LDFLAGS += -Wl,--gc-sections -nostartfiles
+ifeq ($(TARGET),eval-adf7xxxmb4z)
+  LDFLAGS += -T $(CONTIKI_CPU)/R5F100xL.ld
+else
+  LDFLAGS += -T $(CONTIKI_CPU)/R5F104PJ.ld
+endif
 
   ASFLAGS += -c
   
