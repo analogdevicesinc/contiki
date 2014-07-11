@@ -35,6 +35,10 @@
 #ifndef __COMMUNICATION_H__
 #define __COMMUNICATION_H__
 
+#include <stdint.h>
+
+#include "platform-conf.h"
+
 /******************************************************************************/
 /*************************** Macros Definitions *******************************/
 /******************************************************************************/
@@ -67,8 +71,10 @@ enum CSI_Bus {
   CSI11,
   CSI20,
   CSI21,
+#if RL78_NB_PINS >= 80
   CSI30,
   CSI31,
+#endif
 };
 
 /*! Initializes the SPI communication peripheral. */
@@ -78,17 +84,21 @@ char SPI_Init(enum CSI_Bus bus,
               char clockPol,
               char clockEdg);
 
+void SPI_Set_CS(enum CSI_Bus bus, char slaveDeviceId, char high);
+
+int SPI_Write_NoCS(enum CSI_Bus bus, char slaveDeviceId,
+		const uint8_t *data, unsigned short bytesNumber);
+
+int SPI_Read_NoCS(enum CSI_Bus bus, char slaveDeviceId,
+              uint8_t *data, unsigned short bytesNumber);
+
 /*! Writes data to SPI. */
-char SPI_Write(enum CSI_Bus bus,
-               char slaveDeviceId,
-               unsigned char *data,
-               char bytesNumber);
+int SPI_Write(enum CSI_Bus bus, char slaveDeviceId,
+		const uint8_t *data, unsigned short bytesNumber);
 
 /*! Reads data from SPI. */
-char SPI_Read(enum CSI_Bus bus,
-              char slaveDeviceId,
-              unsigned char *data,
-              char bytesNumber);
+int SPI_Read(enum CSI_Bus bus, char slaveDeviceId,
+              uint8_t *data, unsigned short bytesNumber);
 
 /*! Initializes the I2C communication peripheral. */
 char I2C_Init(long clockFreq);

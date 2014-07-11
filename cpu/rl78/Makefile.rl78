@@ -130,11 +130,16 @@ else
     CFLAGSWERROR ?= -Werror -pedantic -std=c99 -Werror
   endif
   
-  CFLAGSNO ?= -Wall -g $(CFLAGSWERROR)
-  CFLAGS  += $(CFLAGSNO) -O
+  CFLAGSNO ?= -Wall $(CFLAGSWERROR)
+  CFLAGS  += $(CFLAGSNO)
 
+ifeq ($(TARGET),eval-adf7xxxmb4z)
   CFLAGS += -mmul=g13
-  CFLAGS  += -Os -ggdb -ffunction-sections -fdata-sections
+else
+  CFLAGS += -mmul=rl78
+endif
+
+  CFLAGS  += -Os -ffunction-sections -fdata-sections
   CFLAGS  += -fno-strict-aliasing
 
   # Enable override of write() function:
@@ -160,9 +165,9 @@ CONTIKI_CPU_DIRS += sys
 CONTIKI_CPU_DIRS += adf7023
 
 ### CPU-dependent source files
-CONTIKI_SOURCEFILES += uart0.c
+CONTIKI_SOURCEFILES += uart0.c uart1.c
 CONTIKI_SOURCEFILES += clock.c
-CONTIKI_SOURCEFILES += write.c
+CONTIKI_SOURCEFILES += syscalls.c
 
 CONTIKI_SOURCEFILES += Communication.c
 CONTIKI_SOURCEFILES += ADF7023.c

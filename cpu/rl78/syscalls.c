@@ -32,12 +32,15 @@
  * \author Ian Martin <martini@redwirellc.com>
  */
 
+#include <errno.h>
 #include <stddef.h> // for size_t.
 
 #include "platform-conf.h"
-#include "uart0.h"
+#ifdef PLATFORM_USE_UART1
 #include "uart1.h"
-#include "write.h"
+#else
+#include "uart0.h"
+#endif
 
 int write(int fd, const void *buf, size_t count) {
 	size_t n;
@@ -54,3 +57,18 @@ int write(int fd, const void *buf, size_t count) {
 		write(fd, buf, count);
 	}
 #endif
+
+void * sbrk(int incr)
+{
+	extern char end;	    /* Defined by the linker */
+	static char *heap_end;
+	char *prev_heap_end;
+
+	if (heap_end == 0) {
+		heap_end = &end;
+	}
+	prev_heap_end = heap_end;
+
+	heap_end += incr;
+	return (void *) prev_heap_end;
+}

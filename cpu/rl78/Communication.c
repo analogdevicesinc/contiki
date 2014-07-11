@@ -36,6 +36,8 @@
 /***************************** Include Files **********************************/
 /******************************************************************************/
 
+#include <errno.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "rl78.h"
@@ -60,9 +62,54 @@
 
 #define CLK_SCALER (0x4)
 #define SCALED_CLK (f_CLK / (1 << CLK_SCALER))
-#define BITBANG_SPI 1
+#define BITBANG_SPI 0
+
+extern const unsigned short cs_pinouts[][MAX_DEVICES_PER_SPI];
 
 char IICA0_Flag;
+
+struct rl78_serial_pinouts {
+	unsigned short clk, miso, mosi;
+	volatile unsigned short *scr, *sdr, *smr, *ssr;
+	volatile unsigned char *sio;
+};
+
+static struct rl78_serial_pinouts serial_pinouts[] = {
+	[CSI00] = { 30,  50,  51,  &SCR00, &SDR00, &SMR00, &SSR00, &SIO00 },
+	[CSI10] = { 4,   3,   2,   &SCR02, &SDR02, &SMR02, &SSR02, &SIO10 },
+	[CSI20] = { 15,  14,  13,  &SCR10, &SDR10, &SMR10, &SSR10, &SIO20 },
+	[CSI21] = { 70,  71,  72,  &SCR11, &SDR11, &SMR11, &SSR11, &SIO21 },
+#if !defined(RL78_NB_PINS) || RL78_NB_PINS < 80
+	[CSI01] = { 43,  44,  45,  &SCR01, &SDR01, &SMR01, &SSR01, &SIO01 },
+	[CSI11] = { 30,  50,  51,  &SCR03, &SDR03, &SMR03, &SSR03, &SIO11 },
+#else
+	[CSI01] = { 75,  74,  73,  &SCR01, &SDR01, &SMR01, &SSR01, &SIO01 },
+	[CSI11] = { 10,  11,  12,  &SCR03, &SDR03, &SMR03, &SSR03, &SIO11 },
+	[CSI30] = { 142, 143, 144, &SCR12, &SDR12, &SMR12, &SSR12, &SIO30 },
+	[CSI31] = { 54,  53,  52,  &SCR13, &SDR13, &SMR13, &SSR13, &SIO31 },
+#endif
+};
+
+static void set_pin(unsigned short pin, bool value)
+{
+	if (value)
+		*(((volatile uint8_t *) 0xFFF00) + pin / 10) |= BIT(pin % 10);
+	else
+		*(((volatile uint8_t *) 0xFFF00) + pin / 10) &= ~BIT(pin % 10);
+}
+
+static bool read_pin(unsigned short pin)
+{
+	return *(((volatile uint8_t *) 0xFFF00) + pin / 10) & BIT(pin % 10);
+}
+
+static void set_pin_mode(unsigned short pin, bool output)
+{
+	if (output)
+		*(((volatile uint8_t *) 0xFFF20) + pin / 10) &= ~BIT(pin % 10);
+	else
+		*(((volatile uint8_t *) 0xFFF20) + pin / 10) |= BIT(pin % 10);
+}
 
 /******************************************************************************/
 /************************ Functions Definitions *******************************/
@@ -108,25 +155,30 @@ SPI_Init(enum CSI_Bus bus,
          char clockPol,
          char clockEdg)
 {
-#if BITBANG_SPI
-  PIOR5 = 1; /* Move SPI/I2C/UART functions from Port 0 pins 2-4 to Port 8. */
+  unsigned int i;
 
-  /* Configure SCLK as an output. */
-  PM0 &= ~BIT(4);
-  POM0 &= ~BIT(4);
+  /* MOSI (output) */
+  set_pin(serial_pinouts[bus].mosi, true);
+  set_pin_mode(serial_pinouts[bus].mosi, true);
 
-  /* Configure MOSI as an output: */
-  PM0 &= ~BIT(2);
-  POM0 &= ~BIT(2);
-  PMC0 &= ~BIT(2);
+  /* MISO (input) */
+  set_pin_mode(serial_pinouts[bus].miso, false);
 
-  /* Configure MISO as an input: */
-  PM0 |= BIT(3);
-  PMC0 &= ~BIT(3);
-#else
-  char sdrValue = 0;
+  /* CLK (output) */
+  set_pin(serial_pinouts[bus].clk, true);
+  set_pin_mode(serial_pinouts[bus].clk, true);
+
+  /* CS (output) */
+  for (i = 0; i < MAX_DEVICES_PER_SPI; i++) {
+	  if (cs_pinouts[bus][i]) {
+		  set_pin(cs_pinouts[bus][i], true);
+		  set_pin_mode(cs_pinouts[bus][i], true);
+	  }
+  }
+
+#if !defined(BITBANG_SPI) || !BITBANG_SPI
   char delay = 0;
-  uint16_t scr;
+  uint16_t scr, sdr;
   uint8_t shift;
 
   PIOR5 = 0; /* Keep SPI functions on Port 0 pins 2-4. */
@@ -134,7 +186,8 @@ SPI_Init(enum CSI_Bus bus,
   /* Enable input clock supply. */
   if(bus <= CSI11) {
     SAU0EN = 1;
-  } else { SAU1EN = 1;
+  } else {
+    SAU1EN = 1;
   }
 
   /* After setting the SAUmEN bit to 1, be sure to set serial clock select
@@ -145,79 +198,30 @@ SPI_Init(enum CSI_Bus bus,
   NOP;
 
   /* Select the fCLK as input clock.  */
-  if(bus <= CSI11) {
-    SPS0 = (CLK_SCALER << 4) | CLK_SCALER;                   /* TODO: kludge */
-  } else { SPS1 = (CLK_SCALER << 4) | CLK_SCALER;            /* TODO: kludge */
-  }
-  /* Select the CSI operation mode. */
-  switch(bus) {
-  case CSI00: SMR00 = 0x0020;
-    break;
-  case CSI01: SMR01 = 0x0020;
-    break;
-  case CSI10: SMR02 = 0x0020;
-    break;
-  case CSI11: SMR03 = 0x0020;
-    break;
-  case CSI20: SMR10 = 0x0020;
-    break;
-  case CSI21: SMR11 = 0x0020;
-    break;
-  case CSI30: SMR12 = 0x0020;
-    break;
-  case CSI31: SMR13 = 0x0020;
-    break;
-  }
+  if (bus <= CSI11)
+	  SPS0 = 0x0000;
+  else
+	  SPS1 = 0x0000;
 
   clockPol = 1 - clockPol;
   scr = (clockEdg << 13) |
     (clockPol << 12) |
     0xC000 |                       /* Operation mode: Transmission/reception. */
     0x0007;                        /* 8-bit data length. */
-  switch(bus) {
-  case CSI00: SCR00 = scr;
-    break;
-  case CSI01: SCR01 = scr;
-    break;
-  case CSI10: SCR02 = scr;
-    break;
-  case CSI11: SCR03 = scr;
-    break;
-  case CSI20: SCR10 = scr;
-    break;
-  case CSI21: SCR11 = scr;
-    break;
-  case CSI30: SCR12 = scr;
-    break;
-  case CSI31: SCR13 = scr;
-    break;
-  }
 
-  /* clockFreq =  mckFreq / (sdrValue * 2 + 2) */
-  sdrValue = SCALED_CLK / (2 * clockFreq) - 1;
-  sdrValue <<= 9;
-  switch(bus) {
-  case CSI00: SDR00 = sdrValue;
-    break;
-  case CSI01: SDR01 = sdrValue;
-    break;
-  case CSI10: SDR02 = sdrValue;
-    break;
-  case CSI11: SDR03 = sdrValue;
-    break;
-  case CSI20: SDR10 = sdrValue;
-    break;
-  case CSI21: SDR11 = sdrValue;
-    break;
-  case CSI30: SDR12 = sdrValue;
-    break;
-  case CSI31: SDR13 = sdrValue;
-    break;
-  }
+
+  /* clockFreq =  mckFreq / (sdr * 2 + 2) */
+  sdr = f_CLK / (2 * clockFreq) - 1;
+  sdr <<= 9;
+
+  *serial_pinouts[bus].scr = scr;
+  *serial_pinouts[bus].sdr = sdr;
+  *serial_pinouts[bus].smr = 0x0020;
 
   /* Set the clock and data initial level. */
   clockPol = 1 - clockPol;
   shift = bus & 0x3;
+
   if(bus <= CSI11) {
     SO0 &= ~(0x0101 << shift);
     SO0 |= ((clockPol << 8) | clockPol) << shift;
@@ -227,113 +231,10 @@ SPI_Init(enum CSI_Bus bus,
   }
 
   /* Enable output for serial communication operation. */
-  switch(bus) {
-  case CSI00: SOE0 |= BIT(0);
-    break;
-  case CSI01: SOE0 |= BIT(1);
-    break;
-  case CSI10: SOE0 |= BIT(2);
-    break;
-  case CSI11: SOE0 |= BIT(3);
-    break;
-  case CSI20: SOE1 |= BIT(0);
-    break;
-  case CSI21: SOE1 |= BIT(1);
-    break;
-  case CSI30: SOE1 |= BIT(2);
-    break;
-  case CSI31: SOE1 |= BIT(3);
-    break;
-  }
-
-  switch(bus) {
-  case CSI00:
-    /* SO00 output: */
-    P1 |= BIT(2);
-    PM1 &= ~BIT(2);
-
-    /* SI00 input: */
-    PM1 |= BIT(1);
-
-    /* SCK00N output: */
-    P1 |= BIT(0);
-    PM1 &= ~BIT(0);
-    break;
-
-  case CSI01:
-    /* SO01 output: */
-    P7 |= BIT(3);
-    PM7 &= ~BIT(3);
-
-    /* SI01 input: */
-    PM7 |= BIT(4);
-
-    /* SCK01 output: */
-    P7 |= BIT(5);
-    PM7 &= ~BIT(5);
-    break;
-
-  case CSI10:
-    PMC0 &= ~BIT(2); /* Disable analog input on SO10. */
-
-    /* SO10 output: */
-    P0 |= BIT(2);
-    PM0 &= ~BIT(2);
-
-    /* SI10 input: */
-    PM0 |= BIT(3);
-
-    /* SCK10N output: */
-    P0 |= BIT(4);
-    PM0 &= ~BIT(4);
-    break;
-
-  case CSI11:
-    /* SO11 output: */
-    P5 |= BIT(1);
-    PM5 &= ~BIT(1);
-
-    /* SI11 input: */
-    PM5 |= BIT(0);
-
-    /* SCK11 output: */
-    P3 |= BIT(0);
-    PM3 &= ~BIT(0);
-    break;
-
-  case CSI20:
-    /* SO20 output: */
-    P1 |= BIT(3);
-    PM1 &= ~BIT(3);
-
-    /* SI20 input: */
-    PM1 |= BIT(4);
-
-    /* SCK20 output: */
-    P1 |= BIT(5);
-    PM1 &= ~BIT(5);
-    break;
-
-  case CSI21:
-    /* SO21 output: */
-    P7 |= BIT(2);
-    PM7 &= ~BIT(2);
-
-    /* SI21 input: */
-    PM7 |= BIT(1);
-
-    /* SCK21 output: */
-    P7 |= BIT(0);
-    PM7 &= ~BIT(0);
-    break;
-
-  case CSI30:
-    /* TODO: not supported */
-    break;
-  case CSI31:
-    /* TODO: not supported */
-    break;
-  }
+  if (bus <= CSI11)
+	  SOE0 |= BIT(bus & 0x3);
+  else
+	  SOE1 |= BIT(bus & 0x3);
 
   /* Wait for the changes to take place. */
   for(delay = 0; delay < 50; delay++) {
@@ -341,47 +242,79 @@ SPI_Init(enum CSI_Bus bus,
   }
 
   /* Set the SEmn bit to 1 and enter the communication wait status */
-  switch(bus) {
-  case CSI00: SS0 = BIT(0);
-    break;
-  case CSI01: SS0 = BIT(1);
-    break;
-  case CSI10: SS0 = BIT(2);
-    break;
-  case CSI11: SS0 = BIT(3);
-    break;
-  case CSI20: SS1 = BIT(0);
-    break;
-  case CSI21: SS1 = BIT(1);
-    break;
-  case CSI30: SS1 = BIT(2);
-    break;
-  case CSI31: SS1 = BIT(3);
-    break;
-  }
-
-  /* Sanity check: */
-  if(bus == CSI10) {
-    /* MOSI: */
-    PIOR5 = 0;
-    PMC02 = 0;
-    PM02 = 0;
-    P02 = 1;
-
-    /* MISO: */
-    PIOR5 = 0;
-    PMC03 = 0;
-    PM03 = 1;
-
-    /* SCLK: */
-    PIOR5 = 0;
-    PM04 = 0;
-    P04 = 1;
-  }
+  if (bus <= CSI11)
+    SS0 = BIT(bus & 0x3);
+  else
+    SS1 = BIT(bus & 0x3);
 #endif
 
   return 0;
 }
+
+#if BITBANG_SPI
+static uint8_t spi_byte_exchange(enum CSI_Bus bus, uint8_t tx)
+{
+  unsigned char rx = 0, n = 0;
+
+  set_pin(serial_pinouts[bus].clk, 0);
+  for(n = 0; n < 8; n++, tx <<= 1) {
+	  set_pin(serial_pinouts[bus].mosi, tx & 0x80);
+
+	  /* The slave samples MOSI at the rising-edge of SCLK. */
+	  set_pin(serial_pinouts[bus].clk, 1);
+
+	  rx = (rx << 1) | read_pin(serial_pinouts[bus].miso);
+
+	  /* The slave changes the value of MISO at the falling-edge of SCLK. */
+	  set_pin(serial_pinouts[bus].clk, 0);
+  }
+
+  return rx;
+}
+#else
+static uint8_t spi_byte_exchange(enum CSI_Bus bus, uint8_t tx)
+{
+	volatile uint8_t *sio = serial_pinouts[bus].sio;
+	volatile uint16_t *ssr = serial_pinouts[bus].ssr;
+	*sio = tx;
+	NOP;
+	while (*ssr & 0x0040);
+	return *sio;
+}
+#endif
+
+void SPI_Set_CS(enum CSI_Bus bus, char slaveDeviceId, char high)
+{
+	if (cs_pinouts[bus][slaveDeviceId])
+		set_pin(cs_pinouts[bus][slaveDeviceId], !!high);
+}
+
+int SPI_Write_NoCS(enum CSI_Bus bus, char slaveDeviceId,
+		const uint8_t *data, unsigned short bytesNumber)
+{
+	unsigned int i;
+
+	if (slaveDeviceId > MAX_DEVICES_PER_SPI)
+		return -ENODEV;
+
+	for(i = 0; i < bytesNumber; i++)
+		spi_byte_exchange(bus, data[i]);
+	return 0;
+}
+
+int SPI_Read_NoCS(enum CSI_Bus bus, char slaveDeviceId,
+		uint8_t *data, unsigned short bytesNumber)
+{
+	unsigned int i;
+
+	if (slaveDeviceId > MAX_DEVICES_PER_SPI)
+		return -ENODEV;
+
+	for(i = 0; i < bytesNumber; i++)
+		data[i] = spi_byte_exchange(bus, 0xFF);
+	return 0;
+}
+
 /***************************************************************************//**
  * @brief Writes data to SPI.
  *
@@ -389,97 +322,18 @@ SPI_Init(enum CSI_Bus bus,
  * @param data          - Data represents the write buffer.
  * @param bytesNumber   - Number of bytes to write.
  *
- * @return Number of written bytes.
+ * @return Zero on success, -1 on error.
  *******************************************************************************/
-#if 0
-char
-SPI_Write(enum CSI_Bus bus,
-          char slaveDeviceId,
-          unsigned char *data,
-          char bytesNumber)
+int SPI_Write(enum CSI_Bus bus, char slaveDeviceId,
+		const uint8_t *data, unsigned short bytesNumber)
 {
-  char byte = 0;
-  unsigned char read = 0;
-  unsigned short originalSCR = 0;
-  unsigned short originalSO1 = 0;
+	int ret;
 
-  volatile uint8_t *sio;
-  volatile uint16_t *ssr;
-
-  switch(bus) {
-  default:
-  case CSI00: sio = &SIO00;
-    ssr = &SSR00;
-    break;
-  case CSI01: sio = &SIO01;
-    ssr = &SSR01;
-    break;
-  case CSI10: sio = &SIO10;
-    ssr = &SSR02;
-    break;
-  case CSI11: sio = &SIO11;
-    ssr = &SSR03;
-    break;
-  case CSI20: sio = &SIO20;
-    ssr = &SSR10;
-    break;
-  case CSI21: sio = &SIO21;
-    ssr = &SSR11;
-    break;
-  case CSI30: sio = &SIO30;
-    ssr = &SSR12;
-    break;
-  case CSI31: sio = &SIO31;
-    ssr = &SSR13;
-    break;
-  }
-
-  for(byte = 0; byte < bytesNumber; byte++) {
-    *sio = data[byte];
-    NOP;
-    while(*ssr & 0x0040) ;
-    read = *sio;
-  }
-
-  return bytesNumber;
+	SPI_Set_CS(bus, slaveDeviceId, 0);
+	ret = SPI_Write_NoCS(bus, slaveDeviceId, data, bytesNumber);
+	SPI_Set_CS(bus, slaveDeviceId, 1);
+	return ret;
 }
-#endif
-
-#if BITBANG_SPI
-#define sclk_low()  (P0 &= ~BIT(4))
-#define sclk_high() (P0 |= BIT(4))
-#define mosi_low()  (P0 &= ~BIT(2))
-#define mosi_high() (P0 |= BIT(2))
-#define read_miso() (P0bits.bit3)
-
-static unsigned char
-spi_byte_exchange(unsigned char tx)
-{
-  unsigned char rx = 0, n = 0;
-
-  sclk_low();
-
-  for(n = 0; n < 8; n++) {
-    if(tx & 0x80) {
-      mosi_high();
-    } else { mosi_low();
-    }
-
-    /* The slave samples MOSI at the rising-edge of SCLK. */
-    sclk_high();
-
-    rx <<= 1;
-    rx |= read_miso();
-
-    tx <<= 1;
-
-    /* The slave changes the value of MISO at the falling-edge of SCLK. */
-    sclk_low();
-  }
-
-  return rx;
-}
-#endif
 
 /***************************************************************************//**
  * @brief Reads data from SPI.
@@ -491,68 +345,17 @@ spi_byte_exchange(unsigned char tx)
  *
  * @return Number of read bytes.
  *******************************************************************************/
-char
-SPI_Read(enum CSI_Bus bus,
-         char slaveDeviceId,
-         unsigned char *data,
-         char bytesNumber)
+int SPI_Read(enum CSI_Bus bus, char slaveDeviceId,
+		uint8_t *data, unsigned short bytesNumber)
 {
-#if BITBANG_SPI
-  unsigned char n = 0;
-  for(n = 0; n < bytesNumber; n++) {
-    data[n] = spi_byte_exchange(data[n]);
-  }
-#else
-  char byte = 0;
-  unsigned short originalSCR = 0;
-  unsigned short originalSO1 = 0;
+	int ret;
 
-  volatile uint8_t *sio;
-  volatile uint16_t *ssr;
-  char dummy;
-
-  switch(bus) {
-  default:
-  case CSI00: sio = &SIO00;
-    ssr = &SSR00;
-    break;
-  case CSI01: sio = &SIO01;
-    ssr = &SSR01;
-    break;
-  case CSI10: sio = &SIO10;
-    ssr = &SSR02;
-    break;
-  case CSI11: sio = &SIO11;
-    ssr = &SSR03;
-    break;
-  case CSI20: sio = &SIO20;
-    ssr = &SSR10;
-    break;
-  case CSI21: sio = &SIO21;
-    ssr = &SSR11;
-    break;
-  case CSI30: sio = &SIO30;
-    ssr = &SSR12;
-    break;
-  case CSI31: sio = &SIO31;
-    ssr = &SSR13;
-    break;
-  }
-
-  /* Flush the receive buffer: */
-  while(*ssr & 0x0020) dummy = *sio;
-  (void)dummy;
-
-  for(byte = 0; byte < bytesNumber; byte++) {
-    *sio = data[byte];
-    NOP;
-    while(*ssr & 0x0040) ;
-    data[byte] = *sio;
-  }
-#endif
-
-  return bytesNumber;
+	SPI_Set_CS(bus, slaveDeviceId, 0);
+	ret = SPI_Read_NoCS(bus, slaveDeviceId, data, bytesNumber);
+	SPI_Set_CS(bus, slaveDeviceId, 1);
+	return ret;
 }
+
 /***************************************************************************//**
  * @brief Initializes the I2C communication peripheral.
  *
