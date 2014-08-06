@@ -262,8 +262,11 @@ static int last_rssi;
 /*-------------------------------------------------------------------------*/
 /* Rime Sniffer support for one single listener to enable powertrace of IP */
 /*-------------------------------------------------------------------------*/
+
 static struct rime_sniffer *callback = NULL;
 
+
+#if DEBUG_SNIFFERS
 void
 rime_sniffer_add(struct rime_sniffer *s)
 {
@@ -275,6 +278,8 @@ rime_sniffer_remove(struct rime_sniffer *s)
 {
   callback = NULL;
 }
+#endif
+
 
 static void
 set_packet_attrs()
