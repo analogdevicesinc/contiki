@@ -103,16 +103,6 @@ static void set_pin_mode(unsigned short pin, bool output)
 /******************************************************************************/
 
 /***************************************************************************//**
- * @brief I2C interrupt service routine.
- *
- * @return None.
- *******************************************************************************/
-/*__interrupt */ static void
-IICA0_Interrupt(void)
-{
-  IICA0_Flag = 1;
-}
-/***************************************************************************//**
  * @brief Initializes the SPI communication peripheral.
  *
  * @param lsbFirst  - Transfer format (0 or 1).
@@ -282,7 +272,7 @@ int SPI_Write_NoCS(enum CSI_Bus bus, char slaveDeviceId,
 	unsigned int i;
 
 	if (slaveDeviceId > MAX_DEVICES_PER_SPI)
-		return -ENODEV;
+		return -1;
 
 	for(i = 0; i < bytesNumber; i++)
 		spi_byte_exchange(bus, data[i]);
@@ -295,7 +285,7 @@ int SPI_Read_NoCS(enum CSI_Bus bus, char slaveDeviceId,
 	unsigned int i;
 
 	if (slaveDeviceId > MAX_DEVICES_PER_SPI)
-		return -ENODEV;
+		return -1;
 
 	for(i = 0; i < bytesNumber; i++)
 		data[i] = spi_byte_exchange(bus, 0xFF);
@@ -341,6 +331,19 @@ int SPI_Read(enum CSI_Bus bus, char slaveDeviceId,
 	ret = SPI_Read_NoCS(bus, slaveDeviceId, data, bytesNumber);
 	SPI_Set_CS(bus, slaveDeviceId, 1);
 	return ret;
+}
+
+#ifdef PLATFROM_HAS_I2C
+
+/***************************************************************************//**
+ * @brief I2C interrupt service routine.
+ *
+ * @return None.
+ *******************************************************************************/
+/*__interrupt */ static void
+IICA0_Interrupt(void)
+{
+  IICA0_Flag = 1;
 }
 
 /***************************************************************************//**
@@ -493,3 +496,4 @@ I2C_Read(char slaveAddress,
 
   return status;
 }
+#endif /* PLATFROM_HAS_I2C */

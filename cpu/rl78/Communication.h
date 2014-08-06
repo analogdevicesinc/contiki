@@ -100,6 +100,7 @@ int SPI_Write(enum CSI_Bus bus, char slaveDeviceId,
 int SPI_Read(enum CSI_Bus bus, char slaveDeviceId,
               uint8_t *data, unsigned short bytesNumber);
 
+#ifdef PLATFROM_HAS_I2C
 /*! Initializes the I2C communication peripheral. */
 char I2C_Init(long clockFreq);
 
@@ -114,5 +115,7 @@ char I2C_Read(char slaveAddress,
               unsigned char *dataBuffer,
               char bytesNumber,
               char stopBit);
+#endif
+
 
 #endif /* __COMMUNICATION_H__ */
