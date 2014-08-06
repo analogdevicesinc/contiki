@@ -44,19 +44,6 @@
 
 #include "Communication.h"  /* Communication definitions */
 
-#ifndef NOP
-#define NOP asm ("nop")
-#endif
-
-/* Enable interrupts: */
-#ifndef EI
-#ifdef __GNUC__
-#define EI asm ("ei");
-#else
-#define EI __enable_interrupt();
-#endif
-#endif
-
 #undef BIT
 #define BIT(n) (1 << (n))
 

@@ -47,4 +47,19 @@
 typedef uint32_t clock_time_t;
 typedef unsigned short uip_stats_t;
 
+#ifdef __IAR_SYSTEMS_ICC__
+#include "intrinsics.h"
+#define EI __enable_interrupt();
+#define DI __disable_interrupt();
+#define NOP __no_operation();
+
+#define EIO 1
+#define ETIMEDOUT 1
+
+#else
+#define EI asm("ei");
+#define DI asm("di");
+#define NOP asm("nop");
+#endif
+
 #endif // RL78_H

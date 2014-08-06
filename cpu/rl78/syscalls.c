@@ -56,6 +56,19 @@ int write(int fd, const void *buf, size_t count) {
 	size_t __write(int fd, const unsigned char *buf, size_t count) {
 		write(fd, buf, count);
 	}
+
+	long __lseek(int file, long ptr, int dir){
+	    return 0;
+	}
+
+	int __close(int fd) {
+		return 0;
+	}
+
+	int remove(const char *foo) {
+		return 0;
+	}
+
 #endif
 
 void * sbrk(int incr)
