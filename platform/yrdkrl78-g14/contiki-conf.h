@@ -46,10 +46,18 @@
 #define CCIF
 #define CLIF
 
+
+/* A trick to resolve a compilation error with IAR. */
+#ifdef __IAR_SYSTEMS_ICC__
+#define UIP_CONF_DS6_AADDR_NBU      1
+#endif
+
 #define USE_FORMATTED_STDIO         1
 
 #define RDC_CONF_HARDWARE_ACK  1
 #define RDC_CONF_HARDWARE_CSMA 1
+
+#define NULLRDC_CONF_802154_AUTOACK_HW 1
 
 /* Network setup for IPv6 */
 #define NETSTACK_CONF_NETWORK sicslowpan_driver
@@ -63,8 +71,6 @@
 #define IEEE802154_CONF_PANID 0x0777
 
 #define LINKADDR_CONF_SIZE                      8
-
-#define RDC_CONF_HARDWARE_CSMA                  1
 
 #define UIP_CONF_ROUTER                         0
 #define UIP_CONF_IPV6_RPL                       0
