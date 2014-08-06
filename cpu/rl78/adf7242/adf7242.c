@@ -76,6 +76,7 @@
 #define REG_GP_IN      0x32E	/* R GPIO Configuration */
 #define REG_SYNT       0x335	/* RW bandwidth calibration timers */
 #define REG_CAL_CFG    0x33D	/* RW Calibration Settings */
+#define REG_PA_BIAS    0x36E	/* RW PA BIAS */
 #define REG_SYNT_CAL   0x371	/* RW Oscillator and Doubler Configuration */
 #define REG_IIRF_CFG   0x389	/* RW BB Filter Decimation Rate */
 #define REG_CDR_CFG    0x38A	/* RW CDR kVCO */
@@ -215,6 +216,17 @@
 #define AUTO_TX_TURNAROUND     (1 << 3)
 #define ADDON_EN               (1 << 4)
 
+/* REG_EXTPA_MSC */
+#define PA_PWR(x)		(((x) & 0xF) << 4)
+#define EXTPA_BIAS_SRC		(1 << 3)
+#define EXTPA_BIAS_MODE(x)	(((x) & 0x7) << 0)
+
+/* REG_PA_CFG */
+#define PA_BRIDGE_DBIAS(x)	(((x) & 0x1F) << 0)
+
+/* REG_PA_BIAS */
+#define PA_BIAS_CTRL(x)		(((x) & 0x1F) << 1)
+#define REG_PA_BIAS_DFL		(1 << 0)
 
 #define INT_RECEIVED 160
 
@@ -226,6 +238,7 @@ static bool tx_led, rx_led;
 
 static volatile bool packet_pending;
 static volatile int tx_status;
+unsigned char adf7242_lqi;
 
 static uint8_t adf7242_tx_irq(struct adf7242_platform_data *pdata)
 {
@@ -427,6 +440,23 @@ static void adf7242_irqwork(void)
 	}
 }
 
+#ifdef __IAR_SYSTEMS_ICC__
+#include "intrinsics.h"
+#pragma vector = 0x0A
+__interrupt void p1_handler(void)
+{
+	/* Ack the interrupt on the CPU side */
+	PIF1 = 0;
+	adf7242_irqwork();
+}
+#pragma vector = 0x0C
+__interrupt void p2_handler(void)
+{
+	/* Ack the interrupt on the CPU side */
+	PIF2 = 0;
+	adf7242_irqwork();
+}
+#else
 void __attribute__((interrupt)) p1_handler(void)
 {
 	/* Ack the interrupt on the CPU side */
@@ -440,6 +470,7 @@ void __attribute__((interrupt)) p2_handler(void)
 	PIF2 = 0;
 	adf7242_irqwork();
 }
+#endif
 
 static int adf7242_verify_firmware(struct adf7242_platform_data *pdata,
 		const uint8_t *data, uint16_t len)
@@ -534,7 +565,7 @@ static int adf7242_reset(struct adf7242_platform_data *pdata)
 static int adf7242_hw_init(struct adf7242_platform_data *pdata)
 {
 	int ret;
-	uint8_t reg;
+	uint8_t reg, tmp;
 
 	DBG(2, "%s :Enter\r\n", __func__);
 
@@ -560,7 +591,7 @@ static int adf7242_hw_init(struct adf7242_platform_data *pdata)
 	if (ret < 0)
 		goto err;
 
-	ret = adf7242_write_reg(pdata, REG_PKT_CFG, 0);
+	ret = adf7242_write_reg(pdata, REG_PKT_CFG, (1 << 2));
 	if (ret < 0)
 		goto err;
 
@@ -606,7 +637,7 @@ static int adf7242_hw_init(struct adf7242_platform_data *pdata)
 		if (ret < 0)
 			goto err;
 
-		ret = adf7242_write_reg(pdata, REG_PKT_CFG, ADDON_EN);
+		ret = adf7242_write_reg(pdata, REG_PKT_CFG, ADDON_EN | (1 << 2));
 		if (ret < 0)
 			goto err;
 	}
@@ -618,6 +649,23 @@ static int adf7242_hw_init(struct adf7242_platform_data *pdata)
 	ret = adf7242_write_reg(pdata, REG_RXFE_CFG, 0x1D);
 	if (ret < 0)
 		goto err;
+
+	/* Max Power */
+	adf7242_read_reg(pdata, REG_PA_CFG, &tmp);
+	tmp &= ~PA_BRIDGE_DBIAS(~0);
+	tmp |= PA_BRIDGE_DBIAS(13);
+	adf7242_write_reg(pdata, REG_PA_CFG, tmp);
+
+	adf7242_read_reg(pdata, REG_PA_BIAS, &tmp);
+	tmp &= ~PA_BIAS_CTRL(~0);
+	tmp |= PA_BIAS_CTRL(55);
+	adf7242_write_reg(pdata, REG_PA_BIAS, tmp);
+
+	adf7242_read_reg(pdata, REG_EXTPA_MSC, &tmp);
+	tmp &= ~PA_PWR(~0);
+	tmp |= PA_PWR(15);
+	ret = adf7242_write_reg(pdata, REG_EXTPA_MSC, tmp);
+
 
 	ret = adf7242_write_reg(pdata, REG_IRQ1_EN0, 0);
 	if (ret < 0)
@@ -661,7 +709,7 @@ static int adf7242_init(void)
 
 	/* MSB first, 2 MHz, idle at low level, serial output changes on
 	 * low to high front */
-	ret = SPI_Init(adf7242_pdata->bus, 0, 2000000, 0, 1);
+	ret = SPI_Init(adf7242_pdata->bus, 0, 4000000, 0, 1);
 	if (ret < 0) {
 		fprintf(stderr, "Error initializing SPI: %s\r\n",
 				strerror(-ret));
@@ -726,6 +774,7 @@ static int adf7242_read(void *buf, unsigned short buf_len)
 
 	ret = adf7242_read_fbuf(adf7242_pdata, buf, &len, &lqi);
 	adf7242_cmd(adf7242_pdata, CMD_RC_RX);
+	adf7242_lqi = lqi;
 	DBG(1, "Received a packet of %hhu bytes\r\n", len - 2);
 	return ret < 0 ? ret : len - 2;
 }
