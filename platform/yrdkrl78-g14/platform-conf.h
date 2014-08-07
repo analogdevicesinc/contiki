@@ -61,6 +61,7 @@
 #define LED14 P10bits.bit1
 #define LED15 P4bits.bit1
 
+#define PMOD2_P9 P11bits.bit0
 #define HEARTBEAT_LED1 LED6
 #define HEARTBEAT_LED2 LED15
 #define RADIO_TX_LED   LED13
@@ -69,5 +70,6 @@
 
 #define RL78_NB_PINS 100
 
-#define MAX_DEVICES_PER_SPI 1
+#define MAX_DEVICES_PER_SPI 2
 #define PLATFORM_USE_UART1 1
+//#define PLATFROM_HAS_I2C
