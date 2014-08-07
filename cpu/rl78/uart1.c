@@ -148,8 +148,8 @@ uart1_init(void)
   SDR03 = SDR_VALUE << 9;
 
   /* Enable TX and RX channels */
-  SO0 |= 0xc;
-  SOE0 |= 0xc;
+  SO0 |= 0x4;
+  SOE0 |= 0x4;
 
   /* Set TxD1 high */
   P0 |= BIT(2);
