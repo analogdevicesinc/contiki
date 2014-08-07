@@ -62,6 +62,11 @@
 #define LED15 P4bits.bit1
 
 #define PMOD2_P9 P11bits.bit0
+#define SWITCH1 P7bits.bit6
+#define SWITCH2 P7bits.bit4
+#define SWITCH3 P7bits.bit5
+
+
 #define HEARTBEAT_LED1 LED6
 #define HEARTBEAT_LED2 LED15
 #define RADIO_TX_LED   LED13
