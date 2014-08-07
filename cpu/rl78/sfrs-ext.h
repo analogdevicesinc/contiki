@@ -124,6 +124,7 @@
 #define MDCH     (*(volatile unsigned short *)0xF00E2)
 #define MDUC     (*(volatile unsigned char  *)0xF00E8)
 #define PER0     (*(volatile unsigned char  *)0xF00F0)
+#define PER1     (*(volatile unsigned char  *)0xF007A)
 #define OSMC     (*(volatile unsigned char  *)0xF00F3)
 #define RMC      (*(volatile unsigned char  *)0xF00F4)
 #define RPECTL   (*(volatile unsigned char  *)0xF00F5)
