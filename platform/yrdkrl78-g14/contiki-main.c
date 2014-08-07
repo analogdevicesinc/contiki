@@ -35,8 +35,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-/* #include <unistd.h> */
-
+#ifdef __GNUC__
+#include <unistd.h>
+#endif
 #include "adf7242.h"
 #include "contiki.h"
 
@@ -168,7 +169,6 @@ main(int argc, char **argv)
   for(i = 0; i <= 15; i++) {
     *((volatile unsigned char *)0xfff20 + i) = 0xff;
   }
-
   /* Disable the LCD backlight by default */
 /*   PM0 &= ~BIT(0); */
 /*   P0 &= ~BIT(0); */
@@ -299,7 +299,6 @@ main(int argc, char **argv)
   if(ret < 0) {
     BUG();
   }
-
   NETSTACK_RDC.init();
   NETSTACK_MAC.init();
   NETSTACK_NETWORK.init();
@@ -328,8 +327,7 @@ main(int argc, char **argv)
     ST7579_String(5, 0, "IP : [2001::4]", 0);
   } else {
     ST7579_String(5, 0, "IP : [2001::3]", 0);
-  }
-  ST7579_String(6, 0, "RADIO :ADF7242", 0);
+  } ST7579_String(6, 0, "RADIO :ADF7242", 0);
   ST7579_String(7, 0, "SENSOR:CN0337", 0);
 
   /* The radio chip started, we can enable interrupts now */
@@ -382,12 +380,10 @@ main(int argc, char **argv)
       } else if(t < pt100_thresh_on) {
         LED1 = 1;
       }
-
       SPI_Read(CSI21, 0, &tmpVal, 1);
       if((tmpVal & 0xF) == 3) {
         NETSTACK_RADIO.on();
       }
-
       if(!SWITCH1) {
         char buf[20];
         sprintf(buf, "LQI:%.3u STAT:%X  ", (unsigned)adf7242_lqi, tmpVal);

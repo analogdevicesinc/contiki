@@ -46,7 +46,6 @@
 #define CCIF
 #define CLIF
 
-
 /* A trick to resolve a compilation error with IAR. */
 #ifdef __IAR_SYSTEMS_ICC__
 #define UIP_CONF_DS6_AADDR_NBU      1
@@ -62,7 +61,7 @@
 /* Network setup for IPv6 */
 #define NETSTACK_CONF_NETWORK sicslowpan_driver
 #define NETSTACK_CONF_MAC     nullmac_driver
-//#define NETSTACK_CONF_RDC     sicslowmac_driver
+/* #define NETSTACK_CONF_RDC     sicslowmac_driver */
 #define NETSTACK_CONF_RDC     nullrdc_driver
 #define NETSTACK_CONF_RADIO   adf7242_driver
 #define NETSTACK_CONF_FRAMER  framer_802154
@@ -83,11 +82,10 @@
 #define UIP_CONF_ND6_REACHABLE_TIME             600000
 #define UIP_CONF_ND6_RETRANS_TIMER              10000
 
-
 #define UIP_CONF_BUFFER_SIZE                    1300
 
 #define QUEUEBUF_CONF_NUM                       4
-#define QUEUEBUF_CONF_REF_NUM			16
+#define QUEUEBUF_CONF_REF_NUM     16
 
 /* UDP configuration options */
 #define UIP_CONF_UDP                            1

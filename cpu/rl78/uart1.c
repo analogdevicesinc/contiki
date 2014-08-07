@@ -77,7 +77,6 @@ uart1_stop(void)
   SREPR00 = 1;
 #endif
 }
-
 void
 uart1_init(void)
 {

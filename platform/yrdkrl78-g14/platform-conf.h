@@ -66,7 +66,6 @@
 #define SWITCH2 P7bits.bit4
 #define SWITCH3 P7bits.bit5
 
-
 #define HEARTBEAT_LED1 LED6
 #define HEARTBEAT_LED2 LED15
 #define RADIO_TX_LED   LED13
@@ -77,4 +76,4 @@
 
 #define MAX_DEVICES_PER_SPI 2
 #define PLATFORM_USE_UART1 1
-//#define PLATFROM_HAS_I2C
+/* #define PLATFROM_HAS_I2C */

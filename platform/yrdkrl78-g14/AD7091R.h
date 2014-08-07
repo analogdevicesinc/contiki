@@ -2,7 +2,7 @@
  *   @file   AD7091R.h
  *   @brief  Header file of AD7091R Driver.
  *   @author Dan Nechita
-********************************************************************************
+ ********************************************************************************
  * Copyright 2012(c) Analog Devices, Inc.
  *
  * All rights reserved.
@@ -36,9 +36,9 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
-********************************************************************************
+ ********************************************************************************
  *   SVN Revision: 788
-*******************************************************************************/
+ *******************************************************************************/
 
 #ifndef __AD7091R_H__
 #define __AD7091R_H__
@@ -56,8 +56,7 @@
 /*! Initializes the SPI communication peripheral. */
 unsigned char AD7091R_Init(enum CSI_Bus, char);
 
-
 /*! Initiates one conversion and reads back the result. */
 unsigned short AD7091R_ReadSample(enum CSI_Bus, char);
 
-#endif	/*__AD7091R_H__*/
+#endif /*__AD7091R_H__*/

@@ -87,18 +87,18 @@ char SPI_Init(enum CSI_Bus bus,
 void SPI_Set_CS(enum CSI_Bus bus, char slaveDeviceId, char high);
 
 int SPI_Write_NoCS(enum CSI_Bus bus, char slaveDeviceId,
-		const uint8_t *data, unsigned short bytesNumber);
+                   const uint8_t *data, unsigned short bytesNumber);
 
 int SPI_Read_NoCS(enum CSI_Bus bus, char slaveDeviceId,
-              uint8_t *data, unsigned short bytesNumber);
+                  uint8_t *data, unsigned short bytesNumber);
 
 /*! Writes data to SPI. */
 int SPI_Write(enum CSI_Bus bus, char slaveDeviceId,
-		const uint8_t *data, unsigned short bytesNumber);
+              const uint8_t *data, unsigned short bytesNumber);
 
 /*! Reads data from SPI. */
 int SPI_Read(enum CSI_Bus bus, char slaveDeviceId,
-              uint8_t *data, unsigned short bytesNumber);
+             uint8_t *data, unsigned short bytesNumber);
 
 #ifdef PLATFROM_HAS_I2C
 /*! Initializes the I2C communication peripheral. */
@@ -116,6 +116,5 @@ char I2C_Read(char slaveAddress,
               char bytesNumber,
               char stopBit);
 #endif
-
 
 #endif /* __COMMUNICATION_H__ */

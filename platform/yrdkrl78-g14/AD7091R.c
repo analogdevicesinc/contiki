@@ -2,7 +2,7 @@
  *   @file   AD7091R.c
  *   @brief  Implementation of AD7091R Driver.
  *   @author Dan Nechita
-********************************************************************************
+ ********************************************************************************
  * Copyright 2012(c) Analog Devices, Inc.
  *
  * All rights reserved.
@@ -36,9 +36,9 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
-********************************************************************************
+ ********************************************************************************
  *   SVN Revision: 788
-*******************************************************************************/
+ *******************************************************************************/
 
 /******************************************************************************/
 /***************************** Include Files **********************************/
@@ -56,47 +56,48 @@
  *
  * @return Result of the initialization procedure.
  *					Example: 0x0 - SPI peripheral was not initialized.
- *				  			 0x1 - SPI peripheral is initialized.
-*******************************************************************************/
-unsigned char AD7091R_Init(enum CSI_Bus bus, char slaveDeviceId)
+ *				         0x1 - SPI peripheral is initialized.
+ *******************************************************************************/
+unsigned char
+AD7091R_Init(enum CSI_Bus bus, char slaveDeviceId)
 {
-    unsigned char status = 1;
-    unsigned char tmpVal;
+  unsigned char status = 1;
+  unsigned char tmpVal;
 
-    status = SPI_Init(bus, slaveDeviceId,  1000000, 0, 1);
+  status = SPI_Init(bus, slaveDeviceId, 1000000, 0, 1);
 
-    /* RESET - do s short read */
-    SPI_Read(bus, slaveDeviceId, &tmpVal, 1);
-    PMOD2_P9 = 1;
+  /* RESET - do s short read */
+  SPI_Read(bus, slaveDeviceId, &tmpVal, 1);
+  PMOD2_P9 = 1;
 
-    return status;
+  return status;
 }
-
 /***************************************************************************//**
  * @brief Initiates one conversion and reads back the result. During this
  *        process the device runs in normal mode and operates without the busy
  *        indicator.
  *
  * @return conversionResult - 12bit conversion result.
-*******************************************************************************/
-unsigned short AD7091R_ReadSample(enum CSI_Bus bus, char slaveDeviceId)
+ *******************************************************************************/
+unsigned short
+AD7091R_ReadSample(enum CSI_Bus bus, char slaveDeviceId)
 {
-    unsigned short conversionResult = 0;
-    unsigned char  buffer[2];
+  unsigned short conversionResult = 0;
+  unsigned char buffer[2];
 
-	PMOD2_P9 = 0;
-    	NOP;
-    	NOP;
-    	NOP;
-    	NOP;
-    	NOP;
-	PMOD2_P9 = 1;
+  PMOD2_P9 = 0;
+  NOP;
+  NOP;
+  NOP;
+  NOP;
+  NOP;
+  PMOD2_P9 = 1;
 
-	clock_wait(CLOCK_SECOND / 1000);
-	/* Read conversion data. */
-	SPI_Read(bus, slaveDeviceId, buffer, 2);
-	conversionResult = (buffer[0] << 8) + buffer[1];
-	conversionResult >>= 4;
+  clock_wait(CLOCK_SECOND / 1000);
+  /* Read conversion data. */
+  SPI_Read(bus, slaveDeviceId, buffer, 2);
+  conversionResult = (buffer[0] << 8) + buffer[1];
+  conversionResult >>= 4;
 
-    return conversionResult;
+  return conversionResult;
 }

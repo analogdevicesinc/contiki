@@ -33,7 +33,7 @@
  */
 
 #include <errno.h>
-#include <stddef.h> // for size_t.
+#include <stddef.h> /* for size_t. */
 
 #include "platform-conf.h"
 #ifdef PLATFORM_USE_UART1
@@ -42,46 +42,56 @@
 #include "uart0.h"
 #endif
 
-int write(int fd, const void *buf, size_t count) {
-	size_t n;
-#ifdef PLATFORM_USE_UART1
-	for (n=0; n<count; n++) uart1_putchar(((const char*)buf)[n]);
-#else
-	for (n=0; n<count; n++) uart0_putchar(((const char*)buf)[n]);
-#endif
-	return count;
-}
-
-#ifdef __IAR_SYSTEMS_ICC__
-	size_t __write(int fd, const unsigned char *buf, size_t count) {
-		write(fd, buf, count);
-	}
-
-	long __lseek(int file, long ptr, int dir){
-	    return 0;
-	}
-
-	int __close(int fd) {
-		return 0;
-	}
-
-	int remove(const char *foo) {
-		return 0;
-	}
-
-#endif
-
-void * sbrk(int incr)
+int
+write(int fd, const void *buf, size_t count)
 {
-	extern char end;	    /* Defined by the linker */
-	static char *heap_end;
-	char *prev_heap_end;
+  size_t n;
+#ifdef PLATFORM_USE_UART1
+  for(n = 0; n < count; n++) {
+    uart1_putchar(((const char *)buf)[n]);
+  }
+#else
+  for(n = 0; n < count; n++) {
+    uart0_putchar(((const char *)buf)[n]);
+  }
+#endif
+  return count;
+}
+#ifdef __IAR_SYSTEMS_ICC__
+size_t
+__write(int fd, const unsigned char *buf, size_t count)
+{
+  write(fd, buf, count);
+}
+long
+__lseek(int file, long ptr, int dir)
+{
+  return 0;
+}
+int
+__close(int fd)
+{
+  return 0;
+}
+int
+remove(const char *foo)
+{
+  return 0;
+}
+#endif
 
-	if (heap_end == 0) {
-		heap_end = &end;
-	}
-	prev_heap_end = heap_end;
+void *
+sbrk(int incr)
+{
+  extern char end;      /* Defined by the linker */
+  static char *heap_end;
+  char *prev_heap_end;
 
-	heap_end += incr;
-	return (void *) prev_heap_end;
+  if(heap_end == 0) {
+    heap_end = &end;
+  }
+  prev_heap_end = heap_end;
+
+  heap_end += incr;
+  return (void *)prev_heap_end;
 }
