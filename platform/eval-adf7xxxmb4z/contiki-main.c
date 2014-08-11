@@ -55,11 +55,22 @@
 #include "watchdog.h"
 #include "slip-arch.h"
 
-#if __GNUC__
-#include "write.h"
+#ifdef __GNUC__
+#include <unistd.h>
 #endif
 
+#include "Communication.h"
+
 SENSORS(&button_sensor);
+
+const unsigned short cs_pinouts[][MAX_DEVICES_PER_SPI] = {
+  [CSI00] = { 0,},
+  [CSI01] = { 0,},
+  [CSI10] = { 0,}, /* FIXME: ADF7023 use chip select */
+  [CSI11] = { 0,},
+  [CSI20] = { 0,},
+  [CSI21] = { 0,},
+};
 
 #ifndef SERIAL_ID
 #define SERIAL_ID { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 }

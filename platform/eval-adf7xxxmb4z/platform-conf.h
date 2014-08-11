@@ -56,3 +56,5 @@
 #define RADIO_TX_LED   LED5
 #define RADIO_RX_LED   LED6
 #define UART_RX_LED    LED8
+
+#define MAX_DEVICES_PER_SPI 1
