@@ -235,7 +235,7 @@ char
 ST7579_Init(enum CSI_Bus bus, char slaveDeviceId)
 {
   char status = -1;
-  unsigned short delay = 0;
+//  unsigned short delay = 0;
 
 /*    status = SPI_Init(bus , slaveDeviceId,        // Transfer format. */
 /*                      1000000,  // SPI clock frequency. */
@@ -360,7 +360,7 @@ ST7579_Char(unsigned char yPosition,
 void
 ST7579_String(unsigned char yPosition,
               unsigned char xPosition,
-              unsigned char *string,
+              char *string,
               unsigned char bigFont)
 {
 

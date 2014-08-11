@@ -70,7 +70,7 @@ void ST7579_Char(unsigned char yPosition,
 /*! Sends a string to ST7579 controller. */
 void ST7579_String(unsigned char yPosition,
                    unsigned char xPosition,
-                   unsigned char *string,
+                   char *string,
                    unsigned char bigFont);
 
 /*! Sends an integer number to ST7579 controller. */
