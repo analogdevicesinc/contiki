@@ -249,11 +249,13 @@ adf7242_tx_irq(struct adf7242_platform_data *pdata)
     return IRQ_TX_PKT_SENT;
   }
 }
+
 static int
 adf7242_status(struct adf7242_platform_data *pdata, uint8_t *stat)
 {
   return SPI_Read(pdata->bus, pdata->device, stat, 1);
 }
+
 static int
 adf7242_wait_mask(struct adf7242_platform_data *pdata, uint8_t mask)
 {
@@ -274,6 +276,7 @@ adf7242_wait_mask(struct adf7242_platform_data *pdata, uint8_t mask)
 
   return cnt == MAX_POLL_LOOPS ? -ETIMEDOUT : 0;
 }
+
 static int
 adf7242_wait_ready(struct adf7242_platform_data *pdata)
 {
@@ -282,6 +285,7 @@ adf7242_wait_ready(struct adf7242_platform_data *pdata)
   DBG(2, "%s :Exit\r\n", __func__);
   return ret;
 }
+
 static int
 adf7242_wait_status(struct adf7242_platform_data *pdata, int status)
 {
@@ -303,6 +307,7 @@ adf7242_wait_status(struct adf7242_platform_data *pdata, int status)
 
   return cnt == MAX_POLL_LOOPS ? -ETIMEDOUT : 0;
 }
+
 static int
 adf7242_write_fbuf(struct adf7242_platform_data *pdata,
                    const uint8_t *data, uint8_t len)
@@ -327,6 +332,7 @@ adf7242_write_fbuf(struct adf7242_platform_data *pdata,
   DBG(2, "%s :Exit\r\n", __func__);
   return ret;
 }
+
 static int
 adf7242_read_fbuf(struct adf7242_platform_data *pdata,
                   uint8_t *data, uint8_t *len, uint8_t *lqi)
@@ -358,6 +364,7 @@ adf7242_read_fbuf(struct adf7242_platform_data *pdata,
   DBG(2, "%s :Exit\r\n", __func__);
   return ret;
 }
+
 static int
 adf7242_read_reg(struct adf7242_platform_data *pdata,
                  uint16_t addr, uint8_t *data)
@@ -384,6 +391,7 @@ adf7242_read_reg(struct adf7242_platform_data *pdata,
   DBG(2, "%s :Exit\r\n", __func__);
   return ret;
 }
+
 static int
 adf7242_write_reg(struct adf7242_platform_data *pdata,
                   uint16_t addr, uint8_t data)
@@ -404,6 +412,7 @@ adf7242_write_reg(struct adf7242_platform_data *pdata,
       addr, data);
   return ret;
 }
+
 static int
 adf7242_cmd(struct adf7242_platform_data *pdata, uint8_t cmd)
 {
@@ -420,6 +429,7 @@ adf7242_cmd(struct adf7242_platform_data *pdata, uint8_t cmd)
   DBG(2, "%s :Exit\r\n", __func__);
   return ret;
 }
+
 static void
 adf7242_irqwork(void)
 {
@@ -455,6 +465,7 @@ adf7242_irqwork(void)
     adf7242_cmd(adf7242_pdata, CMD_RC_RX);
   }
 }
+
 #ifdef __IAR_SYSTEMS_ICC__
 #include "intrinsics.h"
 #pragma vector = 0x0A
@@ -465,6 +476,7 @@ p1_handler(void)
   PIF1 = 0;
   adf7242_irqwork();
 }
+
 #pragma vector = 0x0C
 __interrupt void
 p2_handler(void)
@@ -473,6 +485,7 @@ p2_handler(void)
   PIF2 = 0;
   adf7242_irqwork();
 }
+
 #else
 void __attribute__((interrupt))
 p1_handler(void)
@@ -481,6 +494,7 @@ p1_handler(void)
   PIF1 = 0;
   adf7242_irqwork();
 }
+
 void __attribute__((interrupt))
 p2_handler(void)
 {
@@ -488,6 +502,7 @@ p2_handler(void)
   PIF2 = 0;
   adf7242_irqwork();
 }
+
 #endif
 
 static int
@@ -536,6 +551,7 @@ err:
           strerror(-ret));
   return ret;
 }
+
 static int
 adf7242_upload_firmware(struct adf7242_platform_data *pdata,
                         const uint8_t *data, uint16_t len)
@@ -573,6 +589,7 @@ err:
           strerror(-ret));
   return ret;
 }
+
 static int
 adf7242_reset(struct adf7242_platform_data *pdata)
 {
@@ -587,6 +604,7 @@ adf7242_reset(struct adf7242_platform_data *pdata)
     return adf7242_cmd(pdata, CMD_RC_IDLE);
   }
 }
+
 static int
 adf7242_hw_init(struct adf7242_platform_data *pdata)
 {
@@ -743,6 +761,7 @@ err:
   fprintf(stderr, "Error initializing hardware: %s\r\n", strerror(-ret));
   return ret;
 }
+
 static int
 adf7242_init(void)
 {
@@ -767,6 +786,7 @@ adf7242_init(void)
   ret = adf7242_hw_init(adf7242_pdata);
   return ret ? ret : 1;
 }
+
 static int
 adf7242_send(const void *buf, unsigned short len)
 {
@@ -804,11 +824,13 @@ adf7242_prepare(const void *buf, unsigned short len)
   memcpy(tx_buf, buf, len < sizeof(tx_buf) ? len : sizeof(tx_buf));
   return RADIO_TX_OK;
 }
+
 static int
 adf7242_transmit(unsigned short len)
 {
   return adf7242_send(tx_buf, len);
 }
+
 static int
 adf7242_read(void *buf, unsigned short buf_len)
 {
@@ -826,12 +848,14 @@ adf7242_read(void *buf, unsigned short buf_len)
   DBG(1, "Received a packet of %hhu bytes\r\n", len - 2);
   return ret < 0 ? ret : len - 2;
 }
+
 static int
 adf7242_channel_clear(void)
 {
   /* TODO */
   return 1;
 }
+
 static int
 adf7242_receiving_packet(void)
 {
@@ -845,6 +869,7 @@ adf7242_receiving_packet(void)
 
   return ((status & 0xf) == RC_STATUS_RX) && !(status & STAT_RC_READY);
 }
+
 static int
 adf7242_pending_packet(void)
 {
@@ -852,6 +877,7 @@ adf7242_pending_packet(void)
   packet_pending = false;
   return ret;
 }
+
 static radio_result_t
 adf7242_get_value(radio_param_t param,
                   radio_value_t *value)
@@ -895,6 +921,7 @@ adf7242_get_value(radio_param_t param,
     return RADIO_RESULT_NOT_SUPPORTED;
   }
 }
+
 static radio_result_t
 adf7242_set_value(radio_param_t param,
                   radio_value_t value)
@@ -958,6 +985,7 @@ adf7242_set_value(radio_param_t param,
     return RADIO_RESULT_NOT_SUPPORTED;
   }
 }
+
 static int
 adf7242_off(void)
 {
@@ -968,6 +996,7 @@ adf7242_off(void)
     return RADIO_POWER_MODE_OFF;
   }
 }
+
 static int
 adf7242_on(void)
 {
@@ -978,12 +1007,14 @@ adf7242_on(void)
     return RADIO_POWER_MODE_ON;
   }
 }
+
 static radio_result_t
 adf7242_get_object(radio_param_t param,
                    void *dest, size_t size)
 {
   return RADIO_RESULT_NOT_SUPPORTED;
 }
+
 static radio_result_t
 adf7242_set_object(radio_param_t param,
                    const void *src, size_t size)
@@ -1011,6 +1042,7 @@ adf7242_set_object(radio_param_t param,
     return RADIO_RESULT_NOT_SUPPORTED;
   }
 }
+
 const struct radio_driver adf7242_driver = {
   .init = adf7242_init,
   .send = adf7242_send,
