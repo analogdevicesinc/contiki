@@ -14,12 +14,12 @@ CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 # automatically build RESTful resources
 REST_RESOURCES_DIR = ./resources
 ifndef TARGET
-REST_RESOURCES_FILES = $(notdir $(shell find $(REST_RESOURCES_DIR) -name '*.c'))
+REST_RESOURCES_FILES = $(notdir $(shell find $(REST_RESOURCES_DIR)/*.c))
 else
 ifeq ($(TARGET), native)
-REST_RESOURCES_FILES = $(notdir $(shell find $(REST_RESOURCES_DIR) -name '*.c'))
+REST_RESOURCES_FILES = $(notdir $(shell find $(REST_RESOURCES_DIR)/*.c))
 else
-REST_RESOURCES_FILES = $(notdir $(shell find $(REST_RESOURCES_DIR) -name '*.c' ! -name 'res-plugtest*'))
+REST_RESOURCES_FILES = $(notdir $(shell find $(REST_RESOURCES_DIR)/*.c ! -name res-plugtest*))
 endif
 endif
 
