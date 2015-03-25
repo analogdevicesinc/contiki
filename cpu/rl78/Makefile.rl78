@@ -108,7 +108,7 @@ CUSTOM_RULE_C_TO_CO = 1
 
 # The only reason we use a custom link rule here is to simultaneously produce an srec file.
 CUSTOM_RULE_LINK = 1
-%.$(TARGET) %.$(TARGET).srec: %.co $(PROJECT_OBJECTFILES) $(PROJECT_LIBRARIES) contiki-$(TARGET).a
+%.$(TARGET).srec %.$(TARGET): %.co $(PROJECT_OBJECTFILES) $(PROJECT_LIBRARIES) contiki-$(TARGET).a
 	$(TRACE_LD)
 	$(Q)$(LD) $(LDFLAGS) $(TARGET_STARTFILES) ${filter-out %.a,$^} \
 	    ${filter %.a,$^} $(TARGET_LIBFILES) -o $@ -Omotorola=$@.srec
